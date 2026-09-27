@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}来脂批{% endblock %}
+{% block content %}
+<section class="feed-head">
+  <div>
+    <h1>来脂批</h1>
+    <p class="board-sub">到货时间线 · 非宽表台账</p>
+  </div>
+  <a class="back-link" href="{% url 'home' %}">← 回值守看板</a>
+</section>
+
+<div class="feed-layout">
+  <form method="post" class="lot-intake stack-form"
+        hx-post="{% url 'resin_lot_feed' %}"
+        hx-target="#lot-feed-list"
+        hx-swap="none">
+    {% csrf_token %}
+    <h2>登记到货</h2>
+    {{ form.as_p }}
+    <button type="submit" class="btn-ember"
+            onclick="setTimeout(() => htmx.trigger(document.body, 'lot-refresh'), 200)">写入来脂批</button>
+  </form>
+
+  {% include "resin/_feed_list.html" %}
+</div>
+{% endblock %}

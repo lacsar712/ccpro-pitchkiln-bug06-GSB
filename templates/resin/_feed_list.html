@@ -1,0 +1,17 @@
+<ol class="lot-feed" id="lot-feed-list"
+    hx-get="{% url 'resin_lot_feed_partial' %}"
+    hx-trigger="lot-refresh from:body"
+    hx-swap="outerHTML">
+  {% for lot in lots %}
+  <li class="lot-card">
+    <div class="lot-code mono">{{ lot.lotCode }}</div>
+    <div class="lot-place">{{ lot.originPlace }}</div>
+    <div class="lot-meta">
+      <span class="mono">{{ lot.arrivalKg }} kg</span>
+      <span>{{ lot.receivedAt|date:"Y-m-d H:i" }}</span>
+    </div>
+  </li>
+  {% empty %}
+  <li class="lot-card empty">暂无来脂批</li>
+  {% endfor %}
+</ol>

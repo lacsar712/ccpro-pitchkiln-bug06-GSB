@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}灶台值守看板{% endblock %}
+{% block content %}
+<section class="board-head">
+  <div>
+    <h1>灶台值守看板</h1>
+    <p class="board-sub">按过道排布 · 点灶牌开右侧抽屉</p>
+  </div>
+  <div class="phase-legend">
+    {% for key, label, count in phase_legend %}
+    <span class="leg phase-{{ key }}"><i></i>{{ label }} {{ count }}</span>
+    {% endfor %}
+  </div>
+</section>
+
+<form method="get" class="board-filters stack-form" style="max-width:28rem;margin-bottom:1rem">
+  <label>过道 <input class="field" name="lane" value="{{ filter_lane }}"></label>
+  <label>相位
+    <select class="field" name="phase">
+      <option value="">全部</option>
+      {% for key, label in hearth_phase_choices %}
+      <option value="{{ key }}" {% if filter_phase == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+      {% if not hearth_phase_choices %}
+      <option value="cold" {% if filter_phase == "cold" %}selected{% endif %}>冷灶</option>
+      <option value="charging" {% if filter_phase == "charging" %}selected{% endif %}>装料</option>
+      <option value="ramping" {% if filter_phase == "ramping" %}selected{% endif %}>升温</option>
+      <option value="holding" {% if filter_phase == "holding" %}selected{% endif %}>保温</option>
+      <option value="drawing" {% if filter_phase == "drawing" %}selected{% endif %}>出胶</option>
+      {% endif %}
+    </select>
+  </label>
+  <button type="submit" class="btn-ember">筛选</button>
+</form>
+
+{% include "floor/_grid.html" %}
+
+<aside id="hearth-drawer" class="drawer {% if drawer_open %}open{% endif %}">
+  {% if drawer_open %}
+    {% include "floor/_drawer.html" %}
+  {% else %}
+    <div class="drawer-empty">点选灶牌查看值守与探针</div>
+  {% endif %}
+</aside>
+{% endblock %}
