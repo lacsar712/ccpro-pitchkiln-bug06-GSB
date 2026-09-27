@@ -1,6 +1,6 @@
 <div id="floor-grid"
      class="floor-grid"
-     hx-get="{% url 'floor_grid' %}"
+     hx-get="{% url 'floor_grid' %}?lane={{ filter_lane|urlencode }}&phase={{ filter_phase|urlencode }}"
      hx-trigger="floor-refresh from:body"
      hx-swap="outerHTML">
   {% for lane, tiles in lanes %}

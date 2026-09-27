@@ -17,7 +17,15 @@ def _wants_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
-def _hearths_for_board(lane=None, phase=None, order=("lane", "tag")):
+def _board_filters(request):
+    """整页与局部刷新共用的筛选解析：同一参数、同一规约。"""
+    lane = request.GET.get("lane", "").strip()
+    phase = request.GET.get("phase", "").strip()
+    return lane or None, phase or None
+
+
+def _hearths_for_board(lane=None, phase=None):
+    """看板唯一查询入口：整页与局部刷新必须走这里，排序固定。"""
     qs = FireHearth.objects.prefetch_related(
         Prefetch(
             "runs",
@@ -34,11 +42,11 @@ def _hearths_for_board(lane=None, phase=None, order=("lane", "tag")):
             pass
     if phase not in (None, ""):
         qs = qs.filter(phase=phase)
-    return qs.order_by(*order)
+    return qs.order_by("lane", "tag")
 
 
-def _board_context(lane=None, phase=None, order=("lane", "tag")):
-    hearths = list(_hearths_for_board(lane=lane, phase=phase, order=order))
+def _board_context(lane=None, phase=None):
+    hearths = list(_hearths_for_board(lane=lane, phase=phase))
     lanes = {}
     for h in hearths:
         lanes.setdefault(h.lane, []).append(h)
@@ -72,9 +80,8 @@ def _drawer_context(hearth):
 
 @login_required
 def home(request):
-    lane = request.GET.get("lane", "").strip()
-    phase = request.GET.get("phase", "").strip()
-    ctx = _board_context(lane=lane or None, phase=phase or None, order=("lane", "tag"))
+    lane, phase = _board_filters(request)
+    ctx = _board_context(lane=lane, phase=phase)
     drawer_pk = request.GET.get("hearth")
     if drawer_pk:
         try:
@@ -90,7 +97,10 @@ def home(request):
 
 @login_required
 def floor_grid_partial(request):
-    ctx = _board_context(lane=None, phase=None, order=("-id",))
+    # 与整页 home 完全同一查询、同一排序、同一筛选，
+    # 刷新前后瓦片集合可逐项核对。
+    lane, phase = _board_filters(request)
+    ctx = _board_context(lane=lane, phase=phase)
     html = render_to_string("floor/_grid.html", ctx, request=request)
     return HttpResponse(html)
 
@@ -204,12 +214,14 @@ def close_run(request, pk):
     return redirect(f"/?hearth={pk}")
 
 
-def _resin_lots_full():
-    return list(ResinLot.objects.all().order_by("-receivedAt", "-id")[:40])
+RESIN_FEED_LIMIT = 40
 
 
-def _resin_lots_partial():
-    return list(ResinLot.objects.all().order_by("id")[:40])
+def _resin_lots():
+    """来脂批唯一查询入口：整页与局部刷新共用，排序与截断一致。"""
+    return list(
+        ResinLot.objects.all().order_by("-receivedAt", "-id")[:RESIN_FEED_LIMIT]
+    )
 
 
 @login_required
@@ -228,12 +240,13 @@ def resin_lot_feed(request):
             }
         )
 
-    lots = _resin_lots_full()
+    lots = _resin_lots()
     return render(request, "resin/feed.html", {"lots": lots, "form": form})
 
 
 @login_required
 def resin_lot_feed_partial(request):
-    lots = _resin_lots_partial()
+    # 与整页 resin_lot_feed 走同一 _resin_lots()，集合与顺序逐项一致。
+    lots = _resin_lots()
     html = render_to_string("resin/_feed_list.html", {"lots": lots}, request=request)
     return HttpResponse(html)
